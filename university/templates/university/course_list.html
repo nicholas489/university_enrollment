@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <head><title>Courses</title></head>
+  <body>
+    <h1>Courses</h1>
+    <ul>
+      {% for course in courses %}
+        <li>
+          <a href="{% url 'section_list' course.id %}">
+            {{ course.course_code }} - {{ course.course_name }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
