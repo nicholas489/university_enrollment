@@ -56,6 +56,7 @@ class Command(BaseCommand):
             id=100,
             defaults={
                 "email": "john.jason@torontomu.ca",
+                "password": "jason1234",
                 "first_name": "John",
                 "last_name": "Jason",
                 "admin": admin1,
@@ -66,6 +67,7 @@ class Command(BaseCommand):
             id=101,
             defaults={
                 "email": "jane.smith@torontomu.ca",
+                "password": "jane1234",
                 "first_name": "Jane",
                 "last_name": "Smith",
                 "admin": admin1,
@@ -76,6 +78,7 @@ class Command(BaseCommand):
             id=102,
             defaults={
                 "email": "michael.matt@torontomu.ca",
+                "password": "michael1234",
                 "first_name": "Michael",
                 "last_name": "Matt",
                 "admin": admin1,
@@ -86,6 +89,7 @@ class Command(BaseCommand):
             id=103,
             defaults={
                 "email": "vanessa.sarah@torontomu.ca",
+                "password": "vanessa1234",
                 "first_name": "Vanessa",
                 "last_name": "Sarah",
                 "admin": admin1,
@@ -132,6 +136,7 @@ class Command(BaseCommand):
                 "first_name": "Abdolreza",
                 "last_name": "Abhari",
                 "email": "abhari@torontomu.ca",
+                "password": "abdolreza1234",
                 "office": "ENG201",
                 "department": cs_dept,
                 "admin": admin1,
@@ -144,6 +149,7 @@ class Command(BaseCommand):
                 "first_name": "Alex",
                 "last_name": "Ufkes",
                 "email": "aufkes@torontomu.ca",
+                "password": "alex1234",
                 "office": "ENG301",
                 "department": math_dept,
                 "admin": admin1,

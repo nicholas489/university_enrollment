@@ -5,7 +5,7 @@ class Admin(models.Model):
     # Admin Table
     # (admin_id PK, username, password, first_name, last_name)
     username = models.CharField(max_length=150, unique=True)
-    password = models.CharField(max_length=128)  # in real apps use Django auth/password hashing
+    password = models.CharField(max_length=128)  # Use Django auth/password hashing if time permits
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
 
@@ -29,8 +29,9 @@ class Department(models.Model):
 
 class Student(models.Model):
     # Student Table
-    # (student_id PK, email, first_name, last_name, admin_id FK)
+    # (student_id PK, email, password, first_name, last_name, admin_id FK)
     email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)  # Use Django auth/password hashing if time permits
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     admin = models.ForeignKey(
@@ -75,10 +76,11 @@ class GraduateStudent(models.Model):
 
 class Instructor(models.Model):
     # Instructor Table
-    # (instructor_id PK, first_name, last_name, email, office, department_id FK, admin_id FK)
+    # (instructor_id PK, first_name, last_name, email, password, office, department_id FK, admin_id FK)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)  # Use Django auth/password hashing if time permits
     office = models.CharField(max_length=100, blank=True)
     department = models.ForeignKey(
         Department, on_delete=models.PROTECT, related_name='instructors'
