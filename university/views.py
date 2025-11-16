@@ -3,6 +3,9 @@ from django.shortcuts import render, get_object_or_404
 from .models import Course, Section
 
 # Create your views here.
+def home(request):
+    return render(request, 'university/home.html')
+
 def course_list(request):
     courses = Course.objects.select_related('department').all()
     return render(request, 'university/course_list.html', {'courses': courses})
