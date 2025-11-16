@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Student Dashboard</title>
+  </head>
+  <body>
+    <h1>Student Dashboard</h1>
+    <p>Welcome, {{ student.first_name }} {{ student.last_name }}!</p>
+    <p>Email: {{ student.email }}</p>
+
+    <p>
+      <a href="{% url 'student_logout' %}">Logout</a>
+    </p>
+  </body>
+</html>

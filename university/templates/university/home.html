@@ -45,9 +45,17 @@
   <body>
     <h1>Welcome to the University Enrollment Application</h1>
 
+    <div class="messages">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="{{ message.tags }}" style="padding: 10px">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
     <div class="button-group">
-      <a href="/student/login/" class="btn">Login as Student</a>
-      <a href="/instructor/login/" class="btn">Login as Instructor</a>
+       <a href="{% url 'student_login' %}" class="btn">Login as Student</a>
+      <a href="{% url 'instructor_login' %}" class="btn">Login as Instructor</a>
       <a href="/admin/login/" class="btn">Login as Admin</a>
     </div>
   </body>

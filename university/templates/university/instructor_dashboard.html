@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Instructor Dashboard</title>
+  </head>
+  <body>
+    <h1>Instructor Dashboard</h1>
+    <p>Welcome, {{ instructor.first_name }} {{ instructor.last_name }}!</p>
+    <p>Email: {{ instructor.email }}</p>
+    <p>Office: {{ instructor.office }}</p>
+
+    <p>
+        <a href="{% url 'logout' %}">Logout</a>
+    </p>
+  </body>
+</html>
