@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Available Courses</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h1 {
+        margin-bottom: 5px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f0f0f0;
+      }
+      .messages {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .messages .error {
+        color: #b00020;
+        background: #fdecec;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .success {
+        color: #0b6b0b;
+        background: #e5f6e5;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .info {
+        color: #004085;
+        background: #cce5ff;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .nav-links {
+        margin-top: 20px;
+      }
+      form {
+        margin: 0;
+      }
+      button {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        background: #333;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Available Courses to Add</h1>
+    <p>Student: {{ student.first_name }} {{ student.last_name }} ({{ student.email }})</p>
+
+    {% if sections %}
+      <table>
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Name</th>
+            <th>Term</th>
+            <th>Instructor</th>
+            <th>Capacity</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for section in sections %}
+            <tr>
+              <td>{{ section.course.course_code }}</td>
+              <td>{{ section.course.course_name }}</td>
+              <td>{{ section.term }}</td>
+              <td>{{ section.instructor.first_name }} {{ section.instructor.last_name }}</td>
+              <td>{{ section.current_capacity }}/{{ section.total_capacity }}</td>
+              <td>
+                <form method="post" action="{% url 'student_add_course' section.id %}">
+                  {% csrf_token %}
+                  <button type="submit">Add Course</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No additional sections are currently available to add.</p>
+    {% endif %}
+
+    <div class="nav-links">
+      <a href="{% url 'student_dashboard' %}">Back to Dashboard</a> |
+      <a href="{% url 'home' %}">Home</a>
+    </div>
+  </body>
+</html>
