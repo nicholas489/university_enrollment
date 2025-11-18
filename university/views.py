@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction, IntegrityError
+from decimal import Decimal, InvalidOperation
 from .models import (
     Course, 
     Section, 
@@ -12,8 +13,15 @@ from .models import (
     Waitlist
 )
 from .forms import InstructorLoginForm, StudentLoginForm
+from .decorators import student_required, instructor_required
 
 def home(request):
+    # If already logged in as student/instructor/admin, go to appropriate dashboard
+    if request.session.get('student_id'):
+        return redirect('student_dashboard')
+    if request.session.get('instructor_id'):
+        return redirect('instructor_dashboard')
+    
     return render(request, 'university/home.html')
 
 # Student Views
@@ -29,7 +37,9 @@ def student_login(request):
             except Student.DoesNotExist:
                 messages.error(request, "Invalid email or password.")
             else:
-                # if check_password(password, student.password):
+                # clear any prior instructor session that may exist
+                request.session.pop('instructor_id', None)
+                
                 if password == student.password:
                     request.session['student_id'] = student.id
                     messages.success(request, f"Welcome, {student.first_name}!")
@@ -38,10 +48,14 @@ def student_login(request):
                     messages.error(request, "Invalid email or password.")
     # User made a GET Request to just retrieve the login page
     else:
+        # If student is already logged in, return to dashboard
+        if request.session.get('student_id'):
+            return redirect('student_dashboard')
         form = StudentLoginForm()
 
     return render(request, 'university/student_login.html', {'form': form})
 
+@student_required
 def student_dashboard(request):
     student_id = request.session.get('student_id')
     if not student_id:
@@ -92,6 +106,7 @@ def student_dashboard(request):
         }
     )
 
+@student_required
 def student_available_courses(request):
     student_id = request.session.get('student_id')
     if not student_id:
@@ -121,7 +136,7 @@ def student_available_courses(request):
         }
     )
 
-
+@student_required
 def student_add_course(request, section_id):
     student_id = request.session.get('student_id')
     if not student_id:
@@ -217,6 +232,7 @@ def student_add_course(request, section_id):
 
     return redirect('student_dashboard')
 
+@student_required
 def student_drop_course(request, section_id):
     student_id = request.session.get('student_id')
     if not student_id:
@@ -240,7 +256,7 @@ def student_drop_course(request, section_id):
             # Delete the enrollment
             enrollment.delete()
 
-            # Decrease section capacity (no auto-promotion from waitlist yet)
+            # Decrease section capacity (no auto-promotion from waitlist)
             if section.current_capacity > 0:
                 section.current_capacity -= 1
                 section.save()  # will recalc remaining_capacity in save()
@@ -267,7 +283,9 @@ def instructor_login(request):
             except Instructor.DoesNotExist:
                 messages.error(request, "Invalid email or password.")
             else:
-                # if check_password(password, instructor.password):
+                # clear any student session that may exist
+                request.session.pop('student_id', None)
+                
                 if password == instructor.password:
                     # store instructor id in session
                     request.session['instructor_id'] = instructor.id
@@ -277,21 +295,167 @@ def instructor_login(request):
                     messages.error(request, "Invalid email or password.")
     # User made a GET Request to just retrieve the login page
     else:
+        if request.session.get('instructor_id'):
+            return redirect('instructor_dashboard')
         form = InstructorLoginForm()
 
     return render(request, 'university/instructor_login.html', {'form': form})
 
+@instructor_required
 def instructor_dashboard(request):
     instructor_id = request.session.get('instructor_id')
     if not instructor_id:
         return redirect('instructor_login')
 
     instructor = Instructor.objects.get(id=instructor_id)
+
+    # All sections taught by this instructor
+    sections = (
+        Section.objects
+        .filter(instructor=instructor)
+        .select_related('course')
+        .prefetch_related('enrollments__student', 'grades__student')
+    )
+
+    section_rows = []
+
+    for section in sections:
+        # Map student_id -> Grade object for this section
+        grades_by_student = {g.student_id: g for g in section.grades.all()}
+
+        students_data = []
+        for enrollment in section.enrollments.all():
+            student = enrollment.student
+            grade = grades_by_student.get(student.id)
+
+            students_data.append({
+                "student_name": f"{student.first_name} {student.last_name}",
+                "student_email": student.email,
+                "lab_grade": getattr(grade, 'lab_grade', None),
+                "assignment_grade": getattr(grade, 'assignment_grade', None),
+                "midterm_grade": getattr(grade, 'midterm_grade', None),
+                "final_grade": getattr(grade, 'final_grade', None),
+            })
+
+        section_rows.append({
+            "section_id": section.id,
+            "course_code": section.course.course_code,
+            "course_name": section.course.course_name,
+            "section_number": section.section_number,
+            "term": section.term,
+            "students": students_data,
+        })
+
     return render(
         request,
         'university/instructor_dashboard.html',
-        {'instructor': instructor}
+        {
+            'instructor': instructor,
+            'section_rows': section_rows,
+        }
     )
+
+@instructor_required
+def instructor_edit_grades(request, section_id):
+    instructor_id = request.session.get('instructor_id')
+    if not instructor_id:
+        return redirect('instructor_login')
+
+    instructor = Instructor.objects.get(id=instructor_id)
+    section = get_object_or_404(Section, id=section_id)
+
+    # Ensure this instructor actually teaches this section
+    if section.instructor_id != instructor.id:
+        messages.error(request, "You are not authorized to edit grades for this section.")
+        return redirect('instructor_dashboard')
+
+    enrollments = (
+        Enrollment.objects
+        .filter(section=section)
+        .select_related('student')
+    )
+
+    # Map (student_id) -> Grade object
+    grades = Grade.objects.filter(section=section, student__in=[e.student for e in enrollments])
+    grades_by_student = {g.student_id: g for g in grades}
+
+    if request.method == "POST":
+        # Process grade updates
+        for enrollment in enrollments:
+            student = enrollment.student
+            key_prefix = f"{enrollment.id}"
+
+            lab_raw = request.POST.get(f"lab_grade_{key_prefix}", "").strip()
+            assignment_raw = request.POST.get(f"assignment_grade_{key_prefix}", "").strip()
+            midterm_raw = request.POST.get(f"midterm_grade_{key_prefix}", "").strip()
+            final_raw = request.POST.get(f"final_grade_{key_prefix}", "").strip()
+
+            def parse_decimal(value):
+                if value == "":
+                    return None
+                try:
+                    return Decimal(value)
+                except InvalidOperation:
+                    return None  # you could also collect errors if you want
+
+            lab = parse_decimal(lab_raw)
+            assignment = parse_decimal(assignment_raw)
+            midterm = parse_decimal(midterm_raw)
+            final = parse_decimal(final_raw)
+
+            grade = grades_by_student.get(student.id)
+
+            if grade is None:
+                # Create new grade row if any field has a value
+                if any(v is not None for v in (lab, assignment, midterm, final)):
+                    grade = Grade.objects.create(
+                        student=student,
+                        section=section,
+                        course=section.course,
+                        admin=section.admin,
+                        lab_grade=lab,
+                        assignment_grade=assignment,
+                        midterm_grade=midterm,
+                        final_grade=final,
+                    )
+                    grades_by_student[student.id] = grade
+            else:
+                # Update existing grade
+                grade.lab_grade = lab
+                grade.assignment_grade = assignment
+                grade.midterm_grade = midterm
+                grade.final_grade = final
+                grade.save()
+
+        messages.success(request, "Grades updated successfully.")
+        return redirect('instructor_dashboard')
+
+    # GET: build rows for display in form
+    rows = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        g = grades_by_student.get(student.id)
+
+        rows.append({
+            "enrollment_id": enrollment.id,
+            "student_name": f"{student.first_name} {student.last_name}",
+            "student_email": student.email,
+            "lab_grade": getattr(g, 'lab_grade', None),
+            "assignment_grade": getattr(g, 'assignment_grade', None),
+            "midterm_grade": getattr(g, 'midterm_grade', None),
+            "final_grade": getattr(g, 'final_grade', None),
+        })
+
+    return render(
+        request,
+        'university/instructor_edit_grades.html',
+        {
+            'instructor': instructor,
+            'section': section,
+            'rows': rows,
+        }
+    )
+
 
 def logout(request):
     # Safely remove entity ids from session if they're present

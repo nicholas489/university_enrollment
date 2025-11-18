@@ -6,11 +6,6 @@ urlpatterns = [
     # path('courses/', views.course_list, name='course_list'),
     # path('sections/<int:course_id>/', views.section_list, name='section_list'),
     
-    # Instructor authentication + dashboard
-    path('instructor/login/', views.instructor_login, name='instructor_login'),
-    path('instructor/dashboard/', views.instructor_dashboard, name='instructor_dashboard'),
-    path('instructor/logout/', views.logout, name='logout'),
-    
     # Student authentication + dashboard
     path('student/login/', views.student_login, name='student_login'),
     path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
@@ -33,5 +28,16 @@ urlpatterns = [
         'student/courses/drop/<int:section_id>/',
         views.student_drop_course,
         name='student_drop_course'
+    ),
+    
+    # Instructor authentication + dashboard
+    path('instructor/login/', views.instructor_login, name='instructor_login'),
+    path('instructor/dashboard/', views.instructor_dashboard, name='instructor_dashboard'),
+    path('instructor/logout/', views.logout, name='logout'),
+    
+    path(
+        'instructor/sections/<int:section_id>/grades/',
+        views.instructor_edit_grades,
+        name='instructor_edit_grades'
     ),
 ]

@@ -3,12 +3,117 @@
   <head>
     <meta charset="utf-8">
     <title>Instructor Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h1 {
+        margin-bottom: 5px;
+      }
+      h2 {
+        margin-top: 30px;
+        margin-bottom: 5px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f0f0f0;
+      }
+      .messages {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .messages .error {
+        color: #b00020;
+        background: #fdecec;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .success {
+        color: #0b6b0b;
+        background: #e5f6e5;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .info {
+        color: #004085;
+        background: #cce5ff;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .nav-links {
+        margin-top: 20px;
+      }
+    </style>
   </head>
   <body>
     <h1>Instructor Dashboard</h1>
     <p>Welcome, {{ instructor.first_name }} {{ instructor.last_name }}!</p>
     <p>Email: {{ instructor.email }}</p>
     <p>Office: {{ instructor.office }}</p>
+
+    <div class="messages">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    {% if section_rows %}
+      {% for section in section_rows %}
+        <h2>
+          {{ section.course_code }} - {{ section.course_name }}
+          (Section {{ section.section_number }}, {{ section.term }})
+        </h2>
+
+        {% if section.students %}
+          <p>
+            <a href="{% url 'instructor_edit_grades' section.section_id %}">Edit Grades</a>
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Student Email</th>
+                <th>Lab Grade</th>
+                <th>Assignment Grade</th>
+                <th>Midterm Grade</th>
+                <th>Final Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in section.students %}
+                <tr>
+                  <td>{{ s.student_name }}</td>
+                  <td>{{ s.student_email }}</td>
+                  <td>{% if s.lab_grade is not None %}{{ s.lab_grade }}{% else %}N/A{% endif %}</td>
+                  <td>{% if s.assignment_grade is not None %}{{ s.assignment_grade }}{% else %}N/A{% endif %}</td>
+                  <td>{% if s.midterm_grade is not None %}{{ s.midterm_grade }}{% else %}N/A{% endif %}</td>
+                  <td>{% if s.final_grade is not None %}{{ s.final_grade }}{% else %}N/A{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p>No students are currently enrolled in this section.</p>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <p>You are not currently assigned to teach any sections.</p>
+    {% endif %}
 
     <p>
         <a href="{% url 'logout' %}">Logout</a>
