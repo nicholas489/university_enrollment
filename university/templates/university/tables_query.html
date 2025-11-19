@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Query Tables</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      h1 { margin-bottom: 10px; }
+      h2 { margin-top: 30px; margin-bottom: 5px; }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 20px;
+      }
+      th, td {
+        border: 1px solid #ccc;
+        padding: 6px 8px;
+        text-align: left;
+      }
+      th { background: #f0f0f0; }
+      .nav-links { margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1>Query Tables</h1>
+    <p>Predefined reports based on the current database contents.</p>
+
+    <!-- Query 1 -->
+    <h2>Query 1: Instructor average final grade (> 80) per course</h2>
+    {% if query1_rows %}
+      <table>
+        <thead>
+          <tr>
+            <th>Instructor First Name</th>
+            <th>Instructor Last Name</th>
+            <th>Course Code</th>
+            <th>Average Final Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in query1_rows %}
+            <tr>
+              <td>{{ row.section__instructor__first_name }}</td>
+              <td>{{ row.section__instructor__last_name }}</td>
+              <td>{{ row.section__course__course_code }}</td>
+              <td>{{ row.avg_final|floatformat:2 }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No data available for this query.</p>
+    {% endif %}
+
+    <!-- Query 2 -->
+    <h2>Query 2: Instructors & courses with students also in Prof. Abhari’s CPS109</h2>
+    {% if query2_rows %}
+      <table>
+        <thead>
+          <tr>
+            <th>Instructor First Name</th>
+            <th>Instructor Last Name</th>
+            <th>Course Code</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in query2_rows %}
+            <tr>
+              <td>{{ row.section__instructor__first_name }}</td>
+              <td>{{ row.section__instructor__last_name }}</td>
+              <td>{{ row.section__course__course_code }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No matching instructors/courses found.</p>
+    {% endif %}
+
+    <!-- Query 3 -->
+    <h2>Query 3: Min / Max / Avg / Variance / Std Dev of final grades per course</h2>
+    {% if query3_rows %}
+      <table>
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Min Final</th>
+            <th>Max Final</th>
+            <th>Avg Final</th>
+            <th>Variance</th>
+            <th>Std Dev</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in query3_rows %}
+            <tr>
+              <td>{{ row.course_code }}</td>
+              <td>{{ row.min_grade }}</td>
+              <td>{{ row.max_grade }}</td>
+              <td>{{ row.avg_grade }}</td>
+              <td>{{ row.var_grade }}</td>
+              <td>{{ row.stddev_grade }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No grade data available to compute statistics.</p>
+    {% endif %}
+
+    <!-- Query 4 -->
+    <h2>Query 4: Courses with no students enrolled</h2>
+    {% if query4_rows %}
+      <table>
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in query4_rows %}
+            <tr>
+              <td>{{ row.course_code }}</td>
+              <td>{{ row.course_name }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>All courses currently have at least one enrolled student (or there are no courses).</p>
+    {% endif %}
+
+    <!-- Query 5 -->
+    <h2>Query 5: Student counts in CPS109 and CPS205</h2>
+    {% if query5_rows %}
+      <table>
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Student Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in query5_rows %}
+            <tr>
+              <td>{{ row.course_code }}</td>
+              <td>{{ row.student_count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No enrollments for CPS109 or CPS205 found.</p>
+    {% endif %}
+
+    <div class="nav-links">
+      <a href="{% url 'tables_menu' %}">Back to Tables Menu</a>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Drop Tables</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .messages { margin: 10px 0; }
+      .messages .success {
+        color: #0b6b0b;
+        background: #e5f6e5;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .error {
+        color: #b00020;
+        background: #fdecec;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        background: #b00020;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #d32f2f;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Drop University Tables</h1>
+    <p>
+      This will run <code>migrate university zero</code>, which drops all database tables
+      for the <strong>university</strong> app and marks its migrations as unapplied.
+    </p>
+    <p><strong>Danger:</strong> This cannot be undone. You will need to recreate tables afterwards.</p>
+
+    <div class="messages">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <form method="post"
+          onsubmit="return confirm('Are you sure you want to drop all tables for the university app?');">
+      {% csrf_token %}
+      <button type="submit">Drop All University Tables</button>
+    </form>
+
+    <p><a href="{% url 'tables_menu' %}">Back to Tables Menu</a></p>
+  </body>
+</html>

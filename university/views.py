@@ -1,19 +1,44 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.core.management import call_command
 from django.db import transaction, IntegrityError
+from django.db.models import Avg, Count
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from decimal import Decimal, InvalidOperation
+import statistics
 from .models import (
-    Course, 
+    Admin,
+    Course,
+    Department,
+    GraduateStudent, 
     Section, 
     Instructor, 
     Student, 
     Enrollment, 
     Grade,
+    UndergraduateStudent,
     Wait,
     Waitlist
 )
 from .forms import InstructorLoginForm, StudentLoginForm
 from .decorators import student_required, instructor_required
+
+TABLES_CONFIG = [
+    {"id": "admin", "label": "Admin", "model": Admin},
+    {"id": "department", "label": "Department", "model": Department},
+    {"id": "student", "label": "Student", "model": Student},
+    {"id": "undergraduate", "label": "UndergraduateStudent", "model": UndergraduateStudent},
+    {"id": "graduate", "label": "GraduateStudent", "model": GraduateStudent},
+    {"id": "instructor", "label": "Instructor", "model": Instructor},
+    {"id": "course", "label": "Course", "model": Course},
+    {"id": "section", "label": "Section", "model": Section},
+    {"id": "enrollment", "label": "Enrollment", "model": Enrollment},
+    {"id": "grade", "label": "Grade", "model": Grade},
+    {"id": "waitlist", "label": "Waitlist", "model": Waitlist},
+    {"id": "wait", "label": "Wait", "model": Wait},
+]
+
 
 def home(request):
     # If already logged in as student/instructor/admin, go to appropriate dashboard
@@ -456,6 +481,168 @@ def instructor_edit_grades(request, section_id):
         }
     )
 
+def tables_menu(request):
+    return render(request, 'university/tables_menu.html')
+
+def create_tables_page(request):
+    """
+    Recreates tables for the 'university' app by re-applying migrations.
+    Does NOT populate data.
+    """
+    if request.method == "POST":
+        # Re-apply all migrations for the app (recreate tables)
+        call_command('migrate', 'university')
+
+        messages.success(
+            request,
+            "Tables have been created (migrations applied) for the 'university' app."
+        )
+        return redirect('create_tables_page')
+
+    return render(request, 'university/tables_create.html')
+
+def populate_tables_page(request):
+    """
+    Populates tables with mock data by running the seed_mock_data command.
+    Assumes tables already exist.
+    """
+    if request.method == "POST":
+        call_command('seed_mock_data')
+
+        messages.success(
+            request,
+            "Tables have been populated with mock data (seed_mock_data)."
+        )
+        return redirect('populate_tables_page')
+
+    return render(request, 'university/tables_populate.html')
+
+def drop_tables_page(request):
+    """
+    Drops (unapplies migrations for) the 'university' app, which effectively
+    drops all its tables. This uses Django's migration system so migration state stays in sync.
+    """
+    if request.method == "POST":
+        # This will:
+        # - Unapply all migrations for the 'university' app
+        # - Drop its tables
+        call_command('migrate', 'university', 'zero')
+        messages.success(
+            request,
+            "All tables for the 'university' app have been dropped (migrated to zero)."
+        )
+        return redirect('drop_tables_page')
+
+    return render(request, 'university/tables_drop.html')
+
+def query_tables_page(request):
+    # ----- Query 1: Instructor average final grade per course (> 80) -----
+    q1_queryset = (
+        Grade.objects
+        .select_related('section__course', 'section__instructor')
+        .values(
+            'section__instructor__first_name',
+            'section__instructor__last_name',
+            'section__course__course_code',
+        )
+        .annotate(avg_final=Avg('final_grade'))
+        .filter(avg_final__gt=80)
+        .order_by(
+            'section__instructor__last_name',
+            'section__instructor__first_name',
+            'section__course__course_code',
+        )
+    )
+    query1_rows = list(q1_queryset)
+
+    # ----- Query 2: Instructors & courses with students also in Abhari's CPS109 -----
+    abhari_students = Student.objects.filter(
+        enrollments__section__instructor__last_name='Abhari',
+        enrollments__section__course__course_code='CPS109',
+    ).distinct()
+
+    q2_queryset = (
+        Enrollment.objects
+        .filter(student__in=abhari_students)
+        .select_related('section__course', 'section__instructor')
+        .values(
+            'section__instructor__first_name',
+            'section__instructor__last_name',
+            'section__course__course_code',
+        )
+        .distinct()
+        .order_by(
+            'section__instructor__last_name',
+            'section__instructor__first_name',
+            'section__course__course_code',
+        )
+    )
+    query2_rows = list(q2_queryset)
+
+    # ----- Query 3: Min/Max/Avg/Var/StdDev of final grades per course -----
+    query3_rows = []
+    for course in Course.objects.all().order_by('course_code'):
+        finals = list(
+            Grade.objects
+            .filter(course=course)
+            .values_list('final_grade', flat=True)
+        )
+        if not finals:
+            continue
+
+        min_g = min(finals)
+        max_g = max(finals)
+        avg_g = round(statistics.mean(finals), 2)
+
+        if len(finals) > 1:
+            var_g = round(statistics.pvariance(finals), 2)
+            std_g = round(statistics.pstdev(finals), 2)
+        else:
+            var_g = 0
+            std_g = 0
+
+        query3_rows.append({
+            "course_code": course.course_code,
+            "min_grade": min_g,
+            "max_grade": max_g,
+            "avg_grade": avg_g,
+            "var_grade": var_g,
+            "stddev_grade": std_g,
+        })
+
+    # ----- Query 4: Courses with no students enrolled -----
+    q4_queryset = (
+        Course.objects
+        .annotate(total_enrollments=Count('sections__enrollments', distinct=True))
+        .filter(total_enrollments=0)
+        .values('course_code', 'course_name')
+        .order_by('course_code')
+    )
+    query4_rows = list(q4_queryset)
+
+    # ----- Query 5: Student counts in CPS109 and CPS205 -----
+    q5_queryset = (
+        Course.objects
+        .filter(course_code__in=['CPS109', 'CPS205'])
+        .annotate(
+            student_count=Count('sections__enrollments__student', distinct=True)
+        )
+        .values('course_code', 'student_count')
+        .order_by('course_code')
+    )
+    query5_rows = list(q5_queryset)
+
+    return render(
+        request,
+        'university/tables_query.html',
+        {
+            "query1_rows": query1_rows,
+            "query2_rows": query2_rows,
+            "query3_rows": query3_rows,
+            "query4_rows": query4_rows,
+            "query5_rows": query5_rows,
+        }
+    )
 
 def logout(request):
     # Safely remove entity ids from session if they're present

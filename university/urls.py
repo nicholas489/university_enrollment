@@ -38,4 +38,11 @@ urlpatterns = [
         views.instructor_edit_grades,
         name='instructor_edit_grades'
     ),
+    
+    # Modify Tables Menu
+    path('tables_menu/', views.tables_menu, name='tables_menu'),
+    path('tables_menu/drop_tables/', views.drop_tables_page, name='drop_tables_page'),
+    path('tables_menu/create_tables/', views.create_tables_page, name='create_tables_page'),
+    path('tables_menu/populate_tables/', views.populate_tables_page, name='populate_tables_page'),
+    path('tables_menu/query_tables/', views.query_tables_page, name='query_tables_page'),
 ]
