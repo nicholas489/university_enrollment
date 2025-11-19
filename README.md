@@ -3,25 +3,29 @@
 Quick instructions to build and run this Django webapp on localhost.
 
 Prerequisites
-- Python 3.10+ (same major used for development)
+- Python 3.10+
 - pip
 
-## Setup
-Run the following CLI command to get django package:
+## Initial Setup
+**1. Clone this Github Repository**
+
+    git clone https://github.com/nicholas489/university_enrollment.git
+
+**2. Change into this Repo's Directory and run the following CLI command to get django package:**
 
     pip install django
 
-## How to Run Program
-
-**1. Apply DB Migrations**
+**3. Apply DB Migrations**
 
     python3 manage.py migrate
 
-**2. Seed Mock User Data**
+**4. Seed Mock User Data**
 
     python3 manage.py seed_mock_data
 
-**3. Run the web server**
+## How to Run Program
+
+**1. Run the web server**
 
     python3 manage.py runserver
 
