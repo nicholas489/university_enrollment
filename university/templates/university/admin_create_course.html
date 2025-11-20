@@ -82,9 +82,35 @@
 
     <form method="post">
       {% csrf_token %}
-      {{ course_form.as_p }}
+      {{ form.as_p }}
       <button type="submit">Create Course</button>
     </form>
+
+    <h2>Existing Courses</h2>
+    {% if courses %}
+      <table>
+        <thead>
+          <tr>
+            <th>Course Code</th>
+            <th>Course Name</th>
+            <th>Department</th>
+            <th>Admin</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for course in courses %}
+            <tr>
+              <td>{{ course.course_code }}</td>
+              <td>{{ course.course_name }}</td>
+              <td>{{ course.department.name }}</td>
+              <td>{{ course.admin.username }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No courses exist yet.</p>
+    {% endif %}
 
     <div class="nav-links">
       <a href="{% url 'admin_dashboard' %}">Back to Dashboard</a> |

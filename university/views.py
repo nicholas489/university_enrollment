@@ -21,7 +21,12 @@ from .models import (
     Wait,
     Waitlist
 )
-from .forms import InstructorLoginForm, StudentLoginForm, AdminLoginForm
+from .forms import (
+    InstructorLoginForm, 
+    StudentLoginForm, 
+    AdminLoginForm,
+    AdminCreateCourseForm
+)
 from .decorators import student_required, instructor_required
 
 TABLES_CONFIG = [
@@ -54,8 +59,6 @@ def admin_login(request):
     if request.method == "POST":
         form = AdminLoginForm(request.POST)
         if form.is_valid():
-            # username = request.POST.get("username", "").strip()
-            # password = request.POST.get("password", "").strip()
             
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
@@ -93,7 +96,7 @@ def admin_dashboard(request):
         'university/admin_dashboard.html',
         {
             'admin': admin,
-            'tables': TABLES_CONFIG,  # You already defined this
+            'tables': TABLES_CONFIG,
         }
     )
 
@@ -102,50 +105,54 @@ def admin_create_course(request):
     if not admin_id:
         return redirect('admin_login')
 
-    departments = Department.objects.all()
-
     if request.method == "POST":
-        dept_id = request.POST.get("department_id")
-        course_code = request.POST.get("course_code", "").strip()
-        course_name = request.POST.get("course_name", "").strip()
-        description = request.POST.get("description", "").strip()
-        instructor_id = request.POST.get("instructor_id")
-        num_sections = int(request.POST.get("num_sections", 1))
-        capacity = int(request.POST.get("capacity", 30))
-
-        department = get_object_or_404(Department, id=dept_id)
-        instructor = get_object_or_404(Instructor, id=instructor_id)
-
-        try:
-            with transaction.atomic():
-                course = Course.objects.create(
-                    course_code=course_code,
-                    course_name=course_name,
-                    description=description,
-                    department=department,
-                    admin_id=admin_id
-                )
-
-                # Create sections
-                for i in range(1, num_sections + 1):
-                    Section.objects.create(
-                        course=course,
-                        section_number=i,
-                        instructor=instructor,
-                        total_capacity=capacity,
-                        current_capacity=0,
+        
+        form = AdminCreateCourseForm(request.POST)
+        
+        if form.is_valid():
+            department_name = form.cleaned_data['department']
+            instructor = form.cleaned_data['instructor']
+            
+            course_code = form.cleaned_data['course_code']
+            course_name = form.cleaned_data['course_name']
+            num_sections = form.cleaned_data['num_sections']
+            capacity = form.cleaned_data['total_capacity']
+            
+            try:
+                with transaction.atomic():
+                    course = Course.objects.create(
+                        course_code=course_code,
+                        course_name=course_name,
+                        department_id=Department.objects.get(name=department_name).id,
                         admin_id=admin_id
                     )
-            messages.success(request, f"Course {course_code} created with {num_sections} section(s).")
-            return redirect('admin_dashboard')
-        except IntegrityError:
-            messages.error(request, "Error creating course. Please check inputs.")
 
+                    # Create sections
+                    for i in range(1, num_sections + 1):
+                        Section.objects.create(
+                            course=course,
+                            section_number=i,
+                            instructor=instructor,
+                            total_capacity=capacity,
+                            current_capacity=0,
+                            admin_id=admin_id
+                        )
+                messages.success(request, f"Course {course_code} created with {num_sections} section(s).")
+                return redirect('admin_dashboard')
+            except IntegrityError:
+                messages.error(request, "Error creating course. Please check inputs.")
+    else:
+        form = AdminCreateCourseForm()
+
+    # Show existing courses as a simple table under the form
+    courses = Course.objects.select_related("department", "admin").order_by("course_code")
+    
     return render(
         request,
         'university/admin_create_course.html',
         {
-            "departments": departments,
+            "form": form,
+            "courses": courses,
         }
     )
 
