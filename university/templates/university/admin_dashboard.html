@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Admin Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h1, h2 {
+        margin-bottom: 5px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f0f0f0;
+      }
+      .messages {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .messages .error {
+        color: #b00020;
+        background: #fdecec;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .success {
+        color: #0b6b0b;
+        background: #e5f6e5;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .info {
+        color: #004085;
+        background: #cce5ff;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .nav-links {
+        margin-top: 20px;
+      }
+      .actions button {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        background: #333;
+        color: #fff;
+        cursor: pointer;
+        margin-right: 5px;
+      }
+      .actions button:hover {
+        background: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Admin Dashboard</h1>
+    <p>Welcome, {{ admin.first_name }} {{ admin.last_name }}!</p>
+    <p>Email: {{ admin.email }}</p>
+
+    <div class="messages">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <h2>Admin Actions</h2>
+    <div class="actions">
+      <a href="{% url 'admin_create_course' %}"><button>Create New Course</button></a>
+      <a href="{% url 'admin_waitlist' %}"><button>Manage Waitlist</button></a>
+    </div>
+
+    <h2>Database Tables Overview</h2>
+    {% if tables %}
+      <table>
+        <thead>
+          <tr>
+            <th>Table Name</th>
+            <th>Rows Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for table_name, row_count in tables.items %}
+            <tr>
+              <td>{{ table_name }}</td>
+              <td>{{ row_count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No table information available.</p>
+    {% endif %}
+
+    <div class="nav-links">
+      <a href="{% url 'logout' %}">Logout</a>
+    </div>
+  </body>
+</html>

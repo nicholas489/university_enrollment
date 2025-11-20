@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Manage Waitlists</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h1, h2 {
+        margin-bottom: 5px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+      }
+      th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f0f0f0;
+      }
+      .messages {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .messages .error {
+        color: #b00020;
+        background: #fdecec;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .success {
+        color: #0b6b0b;
+        background: #e5f6e5;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      .messages .info {
+        color: #004085;
+        background: #cce5ff;
+        padding: 8px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+      }
+      button {
+        padding: 6px 10px;
+        border: none;
+        border-radius: 4px;
+        background: #333;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #999;
+        cursor: not-allowed;
+      }
+      .nav-links {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Student Waitlists</h1>
+
+    <div class="messages">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    {% if waitlist_entries %}
+      <table>
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Student Email</th>
+            <th>Course</th>
+            <th>Section</th>
+            <th>Current Capacity</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in waitlist_entries %}
+            <tr>
+              <td>{{ entry.student.first_name }} {{ entry.student.last_name }}</td>
+              <td>{{ entry.student.email }}</td>
+              <td>{{ entry.section.course.course_code }} - {{ entry.section.course.course_name }}</td>
+              <td>{{ entry.section.section_number }} ({{ entry.section.term }})</td>
+              <td>{{ entry.section.current_capacity }}/{{ entry.section.total_capacity }}</td>
+              <td>
+                {% if entry.section.current_capacity < entry.section.total_capacity %}
+                  <form method="post" style="margin:0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="wait_id" value="{{ entry.id }}">
+                    <button type="submit" name="enroll_waitlist">Enroll</button>
+                  </form>
+                {% else %}
+                  <button type="button" disabled>Full</button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No students are currently on any waitlists.</p>
+    {% endif %}
+
+    <div class="nav-links">
+      <a href="{% url 'admin_dashboard' %}">Back to Dashboard</a> |
+      <a href="{% url 'home' %}">Home</a>
+    </div>
+  </body>
+</html>

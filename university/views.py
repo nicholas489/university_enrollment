@@ -49,7 +49,147 @@ def home(request):
     
     return render(request, 'university/home.html')
 
-# Student Views
+
+def admin_login(request):
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "").strip()
+
+        try:
+            admin = Admin.objects.get(email=email)
+        except Admin.DoesNotExist:
+            messages.error(request, "Invalid email or password.")
+        else:
+            # Clear other logins
+            request.session.pop("student_id", None)
+            request.session.pop("instructor_id", None)
+
+            if password == admin.password:
+                request.session['admin_id'] = admin.id
+                messages.success(request, f"Welcome Admin {admin.first_name}!")
+                return redirect('admin_dashboard')
+            else:
+                messages.error(request, "Invalid email or password.")
+
+    # GET request
+    if request.session.get('admin_id'):
+        return redirect('admin_dashboard')
+
+    return render(request, 'university/admin_login.html')
+
+def admin_dashboard(request):
+    admin_id = request.session.get('admin_id')
+    admin = Admin.objects.get(id=admin_id)
+
+    return render(
+        request,
+        'university/admin_dashboard.html',
+        {
+            'admin': admin,
+            'tables': TABLES_CONFIG,  # You already defined this
+        }
+    )
+
+def admin_create_course(request):
+    admin_id = request.session.get('admin_id')
+    if not admin_id:
+        return redirect('admin_login')
+
+    departments = Department.objects.all()
+
+    if request.method == "POST":
+        dept_id = request.POST.get("department_id")
+        course_code = request.POST.get("course_code", "").strip()
+        course_name = request.POST.get("course_name", "").strip()
+        description = request.POST.get("description", "").strip()
+        instructor_id = request.POST.get("instructor_id")
+        num_sections = int(request.POST.get("num_sections", 1))
+        capacity = int(request.POST.get("capacity", 30))
+
+        department = get_object_or_404(Department, id=dept_id)
+        instructor = get_object_or_404(Instructor, id=instructor_id)
+
+        try:
+            with transaction.atomic():
+                course = Course.objects.create(
+                    course_code=course_code,
+                    course_name=course_name,
+                    description=description,
+                    department=department,
+                    admin_id=admin_id
+                )
+
+                # Create sections
+                for i in range(1, num_sections + 1):
+                    Section.objects.create(
+                        course=course,
+                        section_number=i,
+                        instructor=instructor,
+                        total_capacity=capacity,
+                        current_capacity=0,
+                        admin_id=admin_id
+                    )
+            messages.success(request, f"Course {course_code} created with {num_sections} section(s).")
+            return redirect('admin_dashboard')
+        except IntegrityError:
+            messages.error(request, "Error creating course. Please check inputs.")
+
+    return render(
+        request,
+        'university/admin_create_course.html',
+        {
+            "departments": departments,
+        }
+    )
+
+# ------------------ VIEW & MANAGE WAITLIST ------------------
+
+def admin_waitlist(request):
+    admin_id = request.session.get('admin_id')
+    if not admin_id:
+        return redirect('admin_login')
+
+    wait_entries = Wait.objects.select_related(
+        'student', 'waitlist__section', 'waitlist__section__course'
+    ).all()
+
+    if request.method == "POST":
+        wait_id = request.POST.get("wait_id")
+        wait_entry = get_object_or_404(Wait, id=wait_id)
+        section = wait_entry.waitlist.section
+
+        if section.current_capacity < section.total_capacity:
+            try:
+                with transaction.atomic():
+                    # Enroll student
+                    Enrollment.objects.create(
+                        student=wait_entry.student,
+                        section=section,
+                        admin_id=admin_id
+                    )
+                    section.current_capacity += 1
+                    section.save()
+                    # Remove from waitlist
+                    wait_entry.delete()
+                messages.success(
+                    request,
+                    f"{wait_entry.student.first_name} {wait_entry.student.last_name} enrolled in {section.course.course_code}."
+                )
+            except IntegrityError:
+                messages.error(request, "Failed to enroll student. Try again.")
+        else:
+            messages.error(request, "Section is full. Cannot enroll student yet.")
+
+        return redirect('admin_waitlist')
+
+    return render(
+        request,
+        'university/admin_waitlist.html',
+        {
+            "wait_entries": wait_entries
+        }
+    )
+
 def student_login(request):
     if request.method == "POST":
         form = StudentLoginForm(request.POST)
@@ -644,13 +784,15 @@ def query_tables_page(request):
         }
     )
 
-def logout(request):
-    # Safely remove entity ids from session if they're present
+def logout_view(request):
+    # Remove all possible session IDs safely
     request.session.pop('instructor_id', None)
     request.session.pop('student_id', None)
-    # Clear any prior messages
+    request.session.pop('admin_id', None)
+
+    # Clear any pending messages
     storage = messages.get_messages(request)
     storage.used = True
-    
+
     messages.success(request, "You have been logged out.")
     return redirect('home')
