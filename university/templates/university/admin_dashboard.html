@@ -69,7 +69,6 @@
   <body>
     <h1>Admin Dashboard</h1>
     <p>Welcome, {{ admin.first_name }} {{ admin.last_name }}!</p>
-    <p>Email: {{ admin.email }}</p>
 
     <div class="messages">
       {% if messages %}
@@ -95,10 +94,10 @@
           </tr>
         </thead>
         <tbody>
-          {% for table_name, row_count in tables.items %}
+          {% for table in tables %}
             <tr>
-              <td>{{ table_name }}</td>
-              <td>{{ row_count }}</td>
+              <td>{{ table.label }}</td>
+              <td>{{ table.count }}</td>
             </tr>
           {% endfor %}
         </tbody>

@@ -90,13 +90,22 @@ def admin_login(request):
 def admin_dashboard(request):
     admin_id = request.session.get('admin_id')
     admin = Admin.objects.get(id=admin_id)
+    
+    # Calculate row counts for each table
+    tables_with_counts = []
+    for table in TABLES_CONFIG:
+        tables_with_counts.append({
+            'id': table['id'],
+            'label': table['label'],
+            'count': table['model'].objects.count()
+        })
 
     return render(
         request,
         'university/admin_dashboard.html',
         {
             'admin': admin,
-            'tables': TABLES_CONFIG,
+            'tables': tables_with_counts,
         }
     )
 
