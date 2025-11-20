@@ -21,7 +21,10 @@ class StudentLoginForm(forms.Form):
 
 
 class AdminLoginForm(forms.Form):
-    email = forms.EmailField(label="Email")
+    username = forms.CharField(
+        label="Username",
+        widget=forms.TextInput
+    )
     password = forms.CharField(
         label="Password",
         widget=forms.PasswordInput

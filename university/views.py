@@ -21,7 +21,7 @@ from .models import (
     Wait,
     Waitlist
 )
-from .forms import InstructorLoginForm, StudentLoginForm
+from .forms import InstructorLoginForm, StudentLoginForm, AdminLoginForm
 from .decorators import student_required, instructor_required
 
 TABLES_CONFIG = [
@@ -52,30 +52,37 @@ def home(request):
 
 def admin_login(request):
     if request.method == "POST":
-        email = request.POST.get("email", "").strip()
-        password = request.POST.get("password", "").strip()
+        form = AdminLoginForm(request.POST)
+        if form.is_valid():
+            # username = request.POST.get("username", "").strip()
+            # password = request.POST.get("password", "").strip()
+            
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
 
-        try:
-            admin = Admin.objects.get(email=email)
-        except Admin.DoesNotExist:
-            messages.error(request, "Invalid email or password.")
-        else:
-            # Clear other logins
-            request.session.pop("student_id", None)
-            request.session.pop("instructor_id", None)
-
-            if password == admin.password:
-                request.session['admin_id'] = admin.id
-                messages.success(request, f"Welcome Admin {admin.first_name}!")
-                return redirect('admin_dashboard')
-            else:
+            try:
+                admin = Admin.objects.get(username=username)
+            except Admin.DoesNotExist:
                 messages.error(request, "Invalid email or password.")
+            else:
+                # Clear other logins
+                request.session.pop("student_id", None)
+                request.session.pop("instructor_id", None)
 
-    # GET request
-    if request.session.get('admin_id'):
-        return redirect('admin_dashboard')
+                if password == admin.password:
+                    request.session['admin_id'] = admin.id
+                    messages.success(request, f"Welcome Admin {admin.first_name}!")
+                    return redirect('admin_dashboard')
+                else:
+                    messages.error(request, "Invalid email or password.")
+    # User made a GET Request to just retrieve the login page
+    else:
+        # If student is already logged in, return to dashboard
+        if request.session.get('admin_id'):
+            return redirect('admin_dashboard')
+        form = AdminLoginForm()
 
-    return render(request, 'university/admin_login.html')
+    return render(request, 'university/admin_login.html', {'form': form})
 
 def admin_dashboard(request):
     admin_id = request.session.get('admin_id')

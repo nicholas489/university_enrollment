@@ -42,13 +42,13 @@ urlpatterns = [
     ),
 
     # Admin authentication + dashboard
-    path('admin/login/', views.admin_login, name='admin_login'),
-    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('admin/logout/', views.logout_view, name='admin_logout'),
+    path('administration/login/', views.admin_login, name='admin_login'),
+    path('administration/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('administration/logout/', views.logout_view, name='admin_logout'),
 
     # Admin functionalities
-    path('admin/create_course/', views.admin_create_course, name='admin_create_course'),
-    path('admin/waitlist/', views.admin_waitlist, name='admin_waitlist'),
+    path('administration/create_course/', views.admin_create_course, name='admin_create_course'),
+    path('administration/waitlist/', views.admin_waitlist, name='admin_waitlist'),
 
     # Tables Menu
     path('tables_menu/', views.tables_menu, name='tables_menu'),
