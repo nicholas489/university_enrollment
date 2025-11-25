@@ -30,6 +30,7 @@ Prerequisites
     python3 manage.py runserver
 
 ## Usage/Testing
+![Image](ui_screenshot.png)
 - Head to [localhost:8000](http://localhost:8000) and login with a Student/Instructor/Admin account
 - To login with a Student Account, use the following email/password credentials:
     - `john.jason@torontomu.ca`
